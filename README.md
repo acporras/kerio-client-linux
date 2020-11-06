@@ -1,4 +1,5 @@
-# kerio-client
+# kerio-client run project
+$ sudo npm run dev
 
 ## Build Setup
 

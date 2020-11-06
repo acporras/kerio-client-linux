@@ -1,93 +1,138 @@
-<template>
-  <v-row justify="center" align="center">
-    <v-col cols="12" sm="8" md="6">
-      <div class="text-center">
-        <logo />
-        <vuetify-logo />
-      </div>
-      <v-card>
-        <v-card-title class="headline">
-          Welcome to the Vuetify + Nuxt.js template
-        </v-card-title>
-        <v-card-text>
-          <p>
-            Vuetify is a progressive Material Design component framework for
-            Vue.js. It was designed to empower developers to create amazing
-            applications.
-          </p>
-          <p>
-            For more information on Vuetify, check out the
-            <a
-              href="https://vuetifyjs.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              documentation </a
-            >.
-          </p>
-          <p>
-            If you have questions, please join the official
-            <a
-              href="https://chat.vuetifyjs.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="chat"
-            >
-              discord </a
-            >.
-          </p>
-          <p>
-            Find a bug? Report it on the github
-            <a
-              href="https://github.com/vuetifyjs/vuetify/issues"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="contribute"
-            >
-              issue board </a
-            >.
-          </p>
-          <p>
-            Thank you for developing with Vuetify and I look forward to bringing
-            more exciting features in the future.
-          </p>
-          <div class="text-xs-right">
-            <em><small>&mdash; John Leider</small></em>
-          </div>
-          <hr class="my-3" />
-          <a
-            href="https://nuxtjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Nuxt Documentation
-          </a>
-          <br />
-          <a
-            href="https://github.com/nuxt/nuxt.js"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Nuxt GitHub
-          </a>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" nuxt to="/inspire"> Continue </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-col>
-  </v-row>
+<template lang="pug">
+div
+  v-app-bar(app)
+    v-toolbar-title
+      v-img(src='./logo.png', width='80px')
+    v-toolbar-title
+      h3 Kerio Client Linux
+  v-main
+    section
+      v-container
+        v-row(justify='center')
+          v-col(md="4" align='center')
+            span Estado: #[v-chip(dark, :color='info.color') {{ info.text }}]
+        v-row(justify='center')
+          v-col(md="4" align='center')
+            v-combobox(v-model="connection" label="Servidor:" :items="config.connections" readonly item-text="connection[0].server[0]" item-value="connection[0].server[0]")
+        v-row(justify='center')
+          v-col(md="4" align='center')
+            v-combobox(v-model="connection" label="Usuario:" :items="config.connections" readonly item-text="connection[0].username[0]" item-value="connection[0].username[0]")
+        v-row(justify='center')
+          v-col(md="4" align='center')
+            span {{ info.message }}
+        v-divider
+        v-row(justify='center')
+          v-col(md="4" align='center')
+            v-btn.mr-4(depressed :disabled="info.valid" @click="connect") Conectar
+            v-btn(depressed :disabled="!info.valid" @click="disconnect") Desconectar
 </template>
-
 <script>
-import Logo from '~/components/Logo.vue'
-import VuetifyLogo from '~/components/VuetifyLogo.vue'
-
 export default {
-  components: {
-    Logo,
-    VuetifyLogo,
+  components: {},
+  data() {
+    return {
+      info: {
+        text: 'Inactivo',
+        color: 'red',
+        message: '',
+        valid: false,
+      },
+      config: {
+        connections: [],
+      },
+      defaultConfig: {
+        connections: [],
+      },
+      connection: [
+        {
+          username: [],
+        },
+      ],
+    }
   },
+  mounted() {
+    this.init()
+  },
+  methods: {
+    init() {
+      this.status()
+      this.connections()
+    },
+    connections() {
+      this.$axios
+        .$request({
+          url: '/api/connections',
+          method: 'POST',
+          responseType: 'json',
+        })
+        .then((resp) => {
+          this.config = resp.transaction.config
+          if (this.config.connections.length > 0) {
+            this.connection = this.config.connections[0]
+          }
+        })
+        .catch((err) => {
+          this.info.text = 'Error'
+          this.info.color = 'red'
+          this.info.message = err
+          this.info.valid = false
+        })
+    },
+    status() {
+      this.$axios
+        .$request({
+          url: '/api/status',
+          method: 'POST',
+          responseType: 'json',
+        })
+        .then((resp) => {
+          this.info.text = resp.valid ? 'Activo' : 'Inactivo'
+          this.info.color = resp.valid ? 'green' : 'red'
+          this.info.message = ''
+          this.info.valid = resp.valid
+        })
+        .catch((err) => {
+          this.info.text = 'Error'
+          this.info.color = 'red'
+          this.info.message = err
+          this.info.valid = false
+        })
+    },
+    connect() {
+      this.$axios
+        .$request({
+          url: '/api/connect',
+          method: 'POST',
+          responseType: 'json',
+        })
+        .then((resp) => {
+          this.status()
+        })
+        .catch((err) => {
+          this.info.text = 'Error'
+          this.info.color = 'red'
+          this.info.message = err
+          this.info.valid = false
+        })
+    },
+    disconnect() {
+      this.$axios
+        .$request({
+          url: '/api/disconnect',
+          method: 'POST',
+          responseType: 'json',
+        })
+        .then((resp) => {
+          this.status()
+        })
+        .catch((err) => {
+          this.info.text = 'Error'
+          this.info.color = 'red'
+          this.info.message = err
+          this.info.valid = false
+        })
+    },
+  },
+  middleware: 'middleware',
 }
 </script>
